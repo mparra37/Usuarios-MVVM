@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import parra.mario.usuariostest.R
 import parra.mario.usuariostest.modelos.*
 import kotlin.collections.emptyList
 
@@ -23,9 +24,10 @@ class UsuarioViewModel(val repo: Repositorio) : ViewModel() {
 
     }
 
-    fun agregaUsuario(nombre: String, correo: String, edad: Int){
+    fun agregaUsuario(nombre: String, correo: String, edad: Int, uri: String?){
         val nuevoId = _usuarios.value.size + 1
-        val usu = Usuario(nuevoId, nombre, correo, edad)
+
+        val usu = Usuario(nuevoId, nombre, correo, edad, R.drawable.avatar, uri)
         repo.agregarUsuario(usu)
         _usuarios.value = repo.getUsuarios() // refresca la liga
     }
