@@ -31,4 +31,12 @@ class UsuarioViewModel(val repo: Repositorio) : ViewModel() {
         repo.agregarUsuario(usu)
         _usuarios.value = repo.getUsuarios() // refresca la liga
     }
+
+    fun editarUsuario(id: Int, nombre: String, correo: String, edad: Int, uri: String?) {
+        val usuario = Usuario(id, nombre, correo, edad, R.drawable.avatar, uri)
+        repo.editarUsuario(usuario)
+
+        _usuarios.value = repo.getUsuarios()
+
+    }
 }

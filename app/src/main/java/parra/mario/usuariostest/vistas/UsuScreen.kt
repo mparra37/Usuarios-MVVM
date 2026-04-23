@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -61,7 +62,7 @@ fun UsuarioScreen(viewModel: UsuarioViewModel){
 
     var mostrarDialogo by remember {mutableStateOf(false)  }
 
-
+    var usuarioAEditar by remember { mutableStateOf<Usuario?>(null) }
 
     Scaffold(
         topBar = {
@@ -87,7 +88,9 @@ fun UsuarioScreen(viewModel: UsuarioViewModel){
         ) {
 
             items(usuarios){ usuario ->
-                UsuarioCard(usuario)
+                UsuarioCard(usuario, onLongClick = {
+                    usuarioAEditar = usuario
+                })
                 Spacer(modifier = Modifier.height(8.dp))
 
             }
@@ -104,12 +107,27 @@ fun UsuarioScreen(viewModel: UsuarioViewModel){
             }
         )
     }
+
+    usuarioAEditar?.let { usuario ->
+        EditarUsuarioDialog(
+            usuario= usuario,
+            onDismiss = { usuarioAEditar = null},
+            onConfirm = { id, nombre, correo, edad, uri ->
+                viewModel.editarUsuario(id, nombre, correo, edad, uri)
+                usuarioAEditar = null
+            }
+        )
+    }
 }
 
 @Composable
-fun UsuarioCard(usuario: Usuario){
+fun UsuarioCard(usuario: Usuario, onLongClick: () -> Unit){
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = onLongClick
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column (modifier = Modifier.padding(16.dp)
@@ -233,6 +251,106 @@ fun AgregarUsuarioDialog(
                     Text("Cancelar")
                 }
             }
+
+
+    )
+}
+
+@Composable
+fun EditarUsuarioDialog(
+    usuario: Usuario,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, String, String, Int, String?) -> Unit
+){
+    var foto by remember { mutableStateOf<Uri?>(usuario.fotoUri?.let {Uri.parse(it)}) }
+    var nombre by remember { mutableStateOf(usuario.nombre) }
+    var correo by remember { mutableStateOf(usuario.correo) }
+    var edad by remember { mutableStateOf(usuario.edad.toString()) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract =    ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        foto  = uri
+
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {Text("Editar Usuario")},
+        text = {
+            Column {
+
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(Color.LightGray)
+                        .clickable{
+                            launcher.launch("image/*")
+                        },
+                    contentAlignment = Alignment.Center
+                ){
+                    if(foto != null){
+                        AsyncImage(
+                            model = foto,
+                            contentDescription = "Foto selección",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }else{
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Elegir Foto",
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("Toca para elegir foto", style = MaterialTheme.typography.bodySmall)
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it},
+                    label = { Text("Nombre") },
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = correo,
+                    onValueChange = { correo = it },
+                    label = { Text("Correo") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = edad,
+                    onValueChange = { edad = it },
+                    label = { Text("Edad") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val edadInt = edad.toIntOrNull() ?: 0
+                    if (nombre.isNotBlank() && correo.isNotBlank() && edadInt > 0) {
+                        onConfirm(usuario.id, nombre, correo, edadInt, foto?.toString())
+                    }
+                }
+            ) {
+                Text("Editar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
 
 
     )
